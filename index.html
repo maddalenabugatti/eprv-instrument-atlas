@@ -1,0 +1,844 @@
+<meta charset="utf-8">
+<title>EPRV Instrument Atlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F6F7FA; --plane:#F0F2F6; --surface:#FFFFFF; --surface-2:#F8F9FB;
+  --border:rgba(15,20,30,0.10); --border-strong:rgba(15,20,30,0.18);
+  --ink:#12151C; --ink-2:#4C5566; --ink-3:#848E9E;
+  --accent:#C97A1F; --accent-ink:#7A4A10; --accent-soft:rgba(201,122,31,0.14);
+  --cat-visible-l:#2a78d6; --cat-red-l:#eb6834; --cat-ir-l:#1baf7a; --cat-future-l:#6b7280;
+  --cat-visible:#2a78d6; --cat-red:#eb6834; --cat-ir:#1baf7a; --cat-future:#6b7280;
+  --grid:#E3E6EC; --baseline:#C7CCD6;
+  --focus:#2a78d6;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A0D13; --plane:#0D1119; --surface:#131826; --surface-2:#171D2C;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+    --ink:#E7EAF0; --ink-2:#A7B0C0; --ink-3:#6C7688;
+    --accent:#E8A33D; --accent-ink:#F4C97C; --accent-soft:rgba(232,163,61,0.16);
+    --cat-visible:#3987e5; --cat-red:#d95926; --cat-ir:#199e70; --cat-future:#8A93A5;
+    --grid:#232A3A; --baseline:#333C4F;
+    --focus:#3987e5;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A0D13; --plane:#0D1119; --surface:#131826; --surface-2:#171D2C;
+  --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+  --ink:#E7EAF0; --ink-2:#A7B0C0; --ink-3:#6C7688;
+  --accent:#E8A33D; --accent-ink:#F4C97C; --accent-soft:rgba(232,163,61,0.16);
+  --cat-visible:#3987e5; --cat-red:#d95926; --cat-ir:#199e70; --cat-future:#8A93A5;
+  --grid:#232A3A; --baseline:#333C4F;
+  --focus:#3987e5;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{ background:var(--accent-soft); }
+a{ color:var(--accent-ink); }
+.mono{ font-family:"Space Mono",ui-monospace,"SF Mono",Menlo,monospace; }
+.tab{ font-variant-numeric:tabular-nums; }
+:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; border-radius:3px; }
+
+.app{ display:grid; grid-template-columns:296px 1fr; min-height:100vh; }
+@media (max-width:920px){ .app{ grid-template-columns:1fr; } }
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  background:var(--plane); border-right:1px solid var(--border);
+  padding:22px 20px 40px; position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+  min-width:0;
+}
+@media (max-width:920px){ .sidebar{ position:static; height:auto; border-right:none; border-bottom:1px solid var(--border);} }
+.brand{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+.brand-mark{ font-family:"Space Mono",monospace; font-weight:700; font-size:13px; letter-spacing:.08em; color:var(--accent-ink); }
+.brand h1{ font-family:"Space Mono",monospace; font-size:17px; margin:2px 0 2px; font-weight:700; letter-spacing:-0.01em; }
+.brand p{ margin:0 0 22px; color:var(--ink-2); font-size:12.5px; max-width:30ch; }
+
+.field{ margin-bottom:20px; }
+.field-label{
+  font-family:"Space Mono",monospace; font-size:10.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--ink-3); display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+}
+.search-input{
+  width:100%; background:var(--surface); border:1px solid var(--border-strong); border-radius:7px;
+  padding:8px 10px; color:var(--ink); font-family:inherit; font-size:13.5px;
+}
+.search-input::placeholder{ color:var(--ink-3); }
+
+.chiprow{ display:flex; flex-wrap:wrap; gap:6px; }
+.chip{
+  display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-strong);
+  background:var(--surface); border-radius:20px; padding:5px 10px 5px 8px; font-size:12px; cursor:pointer;
+  color:var(--ink-2); user-select:none;
+}
+.chip input{ display:none; }
+.chip .dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+.chip.on{ color:var(--ink); border-color:var(--border-strong); background:var(--surface-2); font-weight:600; }
+.chip.future .dot{ background:repeating-linear-gradient(45deg, var(--cat-future) 0 2px, transparent 2px 4px); border:1px solid var(--cat-future); }
+
+.seg{ display:flex; border:1px solid var(--border-strong); border-radius:7px; overflow:hidden; }
+.seg button{
+  flex:1; background:var(--surface); border:none; color:var(--ink-2); padding:7px 6px; font-size:12px;
+  font-family:inherit; cursor:pointer; border-right:1px solid var(--border-strong);
+}
+.seg button:last-child{ border-right:none; }
+.seg button.on{ background:var(--accent-soft); color:var(--accent-ink); font-weight:600; }
+
+.range-wrap{ position:relative; height:34px; }
+.range-track{ position:absolute; top:15px; left:0; right:0; height:3px; background:var(--border-strong); border-radius:2px; }
+.range-fill{ position:absolute; top:15px; height:3px; background:var(--accent); border-radius:2px; }
+input[type=range]{
+  position:absolute; top:6px; left:0; width:100%; margin:0; -webkit-appearance:none; appearance:none;
+  background:transparent; pointer-events:none; height:20px;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; pointer-events:all; width:15px; height:15px; border-radius:50%;
+  background:var(--surface); border:2px solid var(--accent); cursor:pointer; margin-top:0px;
+}
+input[type=range]::-moz-range-thumb{
+  pointer-events:all; width:13px; height:13px; border-radius:50%; background:var(--surface);
+  border:2px solid var(--accent); cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{ background:transparent; }
+.range-vals{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-2); margin-top:2px; }
+
+.check-toolbar{ display:flex; gap:8px; margin-bottom:8px; }
+.btn-mini{
+  font-family:"Space Mono",monospace; font-size:10.5px; letter-spacing:.04em; text-transform:uppercase;
+  background:var(--surface); border:1px solid var(--border-strong); color:var(--ink-2); border-radius:5px;
+  padding:5px 8px; cursor:pointer;
+}
+.btn-mini:hover{ color:var(--ink); }
+.checklist{
+  max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:8px; background:var(--surface);
+}
+.check-row{
+  display:flex; align-items:center; gap:8px; padding:6px 9px; font-size:12.5px; border-bottom:1px solid var(--border);
+  cursor:pointer;
+}
+.check-row:last-child{ border-bottom:none; }
+.check-row:hover{ background:var(--surface-2); }
+.check-row input{ accent-color:var(--accent); flex:none; }
+.check-row .dot{ width:7px; height:7px; border-radius:50%; flex:none; }
+.check-row .nm{ flex:1; font-family:"Space Mono",monospace; font-size:12px; }
+.check-row .obs{ color:var(--ink-3); font-size:10.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80px; }
+.empty-note{ padding:14px 10px; color:var(--ink-3); font-size:12px; text-align:center; }
+
+/* ---------- Main ---------- */
+main{ padding:34px 40px 80px; max-width:1180px; min-width:0; }
+@media (max-width:640px){ main{ padding:24px 16px 60px; } }
+
+.hero{ margin-bottom:30px; }
+.hero .eyebrow{
+  font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--accent-ink); margin-bottom:10px; display:block;
+}
+.hero h2{ font-size:28px; line-height:1.15; margin:0 0 10px; letter-spacing:-0.01em; text-wrap:balance; font-weight:700; }
+.hero p{ color:var(--ink-2); max-width:64ch; margin:0 0 14px; font-size:14.5px; }
+.hero-stats{ display:flex; gap:22px; flex-wrap:wrap; margin-top:16px; }
+.stat{ }
+.stat .n{ font-family:"Space Mono",monospace; font-size:22px; font-weight:700; color:var(--ink); }
+.stat .l{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:.06em; }
+
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:22px 24px 20px; margin-bottom:22px;
+}
+.card-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:4px; flex-wrap:wrap; }
+.card-head h3{ font-size:15px; margin:0 0 3px; font-weight:700; }
+.card-head .sub{ color:var(--ink-3); font-size:12px; max-width:56ch; }
+.legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-2); }
+.legend span{ display:inline-flex; align-items:center; gap:5px; }
+.legend .dot{ width:8px; height:8px; border-radius:50%; }
+.legend .dot.future{ background:repeating-linear-gradient(45deg, var(--cat-future) 0 2px, transparent 2px 4px); border:1px solid var(--cat-future); }
+
+.chart-scroll{ overflow-x:auto; margin-top:10px; }
+svg.chart{ display:block; font-family:"Space Mono",monospace; }
+svg.chart text{ fill:var(--ink-2); }
+svg.chart .axis-label{ fill:var(--ink-3); }
+svg.chart .row-label{ fill:var(--ink); font-size:11px; }
+.bar-empty{ fill:var(--surface-2); stroke:var(--border-strong); stroke-dasharray:2 2; }
+.gridline{ stroke:var(--grid); stroke-width:1; }
+.baseline{ stroke:var(--baseline); stroke-width:1; }
+
+.tooltip{
+  position:fixed; pointer-events:none; z-index:50; background:var(--ink); color:var(--bg);
+  font-family:"Space Mono",monospace; font-size:11.5px; padding:8px 10px; border-radius:7px;
+  max-width:260px; line-height:1.5; box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transition:opacity .08s;
+}
+:root:not([data-theme="light"]) .tooltip{ background:#EDEFF3; color:#0D1119; }
+:root[data-theme="dark"] .tooltip{ background:#EDEFF3; color:#0D1119; }
+.tooltip.show{ opacity:1; }
+.tooltip b{ display:block; margin-bottom:2px; font-size:12.5px; }
+.tooltip .k{ color:var(--ink-3); }
+
+.foot-note{ color:var(--ink-3); font-size:11.5px; margin-top:10px; display:flex; gap:6px; align-items:flex-start; }
+
+/* ---------- Table ---------- */
+.table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+table{ border-collapse:collapse; width:100%; min-width:1080px; font-size:12.5px; }
+thead th{
+  text-align:left; padding:10px 12px; background:var(--surface-2); border-bottom:1px solid var(--border-strong);
+  font-family:"Space Mono",monospace; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3);
+  white-space:nowrap; cursor:pointer; position:sticky; top:0;
+}
+thead th:hover{ color:var(--ink); }
+thead th.active{ color:var(--accent-ink); }
+tbody td{ padding:8px 12px; border-bottom:1px solid var(--border); white-space:nowrap; color:var(--ink-2); }
+tbody tr:hover td{ background:var(--surface-2); }
+tbody td.nm{ font-family:"Space Mono",monospace; color:var(--ink); font-weight:700; }
+tbody td.num{ font-variant-numeric:tabular-nums; text-align:right; }
+.sec-dot{ width:7px; height:7px; border-radius:50%; display:inline-block; margin-right:6px; }
+
+.page-footer{ margin-top:40px; padding-top:18px; border-top:1px solid var(--border); color:var(--ink-3); font-size:11.5px; }
+</style>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-mark">§</span>
+    </div>
+    <h1>EPRV Instrument Atlas</h1>
+    <p>A working comparison of extreme-precision radial-velocity &amp; high-resolution spectrographs, built for the NuAncestor mission.</p>
+
+    <div class="field">
+      <div class="field-label">Search</div>
+      <input id="f-search" class="search-input" type="text" placeholder="Instrument, telescope, observatory&hellip;">
+    </div>
+
+    <div class="field">
+      <div class="field-label">Category</div>
+      <div class="chiprow" id="f-sections"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Hemisphere</div>
+      <div class="seg" id="f-hemi">
+        <button data-v="all" class="on">All</button>
+        <button data-v="N">North</button>
+        <button data-v="S">South</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Feed</div>
+      <div class="seg" id="f-method">
+        <button data-v="all" class="on">All</button>
+        <button data-v="fiber">Fiber</button>
+        <button data-v="slit">Slit</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Telescope aperture</span><span class="mono tab" id="f-tel-label"></span></div>
+      <div class="range-wrap">
+        <div class="range-track"></div><div class="range-fill" id="f-tel-fill"></div>
+        <input type="range" id="f-tel-min" min="0" max="40" step="0.5">
+        <input type="range" id="f-tel-max" min="0" max="40" step="0.5">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span>Resolution (R)</span><span class="mono tab" id="f-res-label"></span></div>
+      <div class="range-wrap">
+        <div class="range-track"></div><div class="range-fill" id="f-res-fill"></div>
+        <input type="range" id="f-res-min" min="0" max="300" step="5">
+        <input type="range" id="f-res-max" min="0" max="300" step="5">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Instruments <span class="mono tab" id="f-count-label"></span></div>
+      <div class="check-toolbar">
+        <button class="btn-mini" id="sel-all">All</button>
+        <button class="btn-mini" id="sel-none">None</button>
+      </div>
+      <div class="checklist" id="checklist"></div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="hero">
+      <span class="eyebrow">NuAncestor &middot; reference catalogue</span>
+      <h2>Forty-six spectrographs, one comparison.</h2>
+      <p>Instrument-level specifications for existing and in-development EPRV/high-resolution spectrographs, compiled from public documentation and direct correspondence with instrument teams. Filter the list on the left, then compare wavelength coverage, spectral resolution, RV precision and throughput across whichever instruments you select.</p>
+      <div class="hero-stats">
+        <div class="stat"><div class="n mono tab" id="stat-total"></div><div class="l">In catalogue</div></div>
+        <div class="stat"><div class="n mono tab" id="stat-shown"></div><div class="l">Currently shown</div></div>
+        <div class="stat"><div class="n mono tab" id="stat-obs"></div><div class="l">Observatories</div></div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h3>Wavelength coverage</h3><div class="sub">Bandwidth range per instrument, coloured by physical wavelength &mdash; the visible band (~380&ndash;750&nbsp;nm) in true spectral colour, the near-infrared fading to grey since it lies beyond human vision.</div></div>
+      </div>
+      <div class="chart-scroll"><svg id="chart-wave" class="chart"></svg></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h3>Spectral resolution</h3><div class="sub">Resolving power R = &lambda;/&Delta;&lambda;, by instrument category.</div></div>
+        <div class="legend" id="legend-1"></div>
+      </div>
+      <div class="chart-scroll"><svg id="chart-res" class="chart"></svg></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h3>RV precision vs. resolution</h3><div class="sub">Point size scales with telescope aperture. Precision axis is logarithmic (cm/s to km/s span four orders of magnitude).</div></div>
+        <div class="legend" id="legend-2"></div>
+      </div>
+      <div class="chart-scroll"><svg id="chart-scatter" class="chart"></svg></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h3>Overall throughput (atmosphere + telescope + spectrograph)</h3><div class="sub">Measured or estimated efficiency range. Full wavelength-dependent transmission curves are being requested from instrument teams and will replace these ranges as they arrive.</div></div>
+      </div>
+      <div class="chart-scroll"><svg id="chart-eff" class="chart"></svg></div>
+      <div class="foot-note">&#9679; Marked instruments report spectrograph-only throughput (atmosphere and telescope losses excluded), so are not directly comparable to the rest.</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div><h3>Full data table</h3><div class="sub">Click a column to sort. Shows every field currently in the catalogue.</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="thead-row"></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="page-footer">EPRV Instrument Atlas &middot; compiled by Maddalena Bugatti for the NuAncestor mission concept, Universit&eacute; de Gen&egrave;ve. Data current as of the dates on file for each instrument &mdash; treat as a working reference, not an authoritative spec sheet.</div>
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const DATA = [{"id":"HIRES","name":"HIRES","section":"PRESENT/VISIBLE","observatory":"Keck Observatory, Hawaii","telescope":"Keck I telescope","telescope_size_m":10.0,"lat_deg":19.825946547222223,"hemisphere":"N","bw_min_nm":300.0,"bw_max_nm":1000.0,"res_min":25000.0,"res_max":85000.0,"efficiency_min":0.06,"efficiency_max":0.08,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Slit","configurations":"2, only one per night","aperture_on_sky":"https://www2.keck.hawaii.edu/inst/hires/slitres.html","focus":"Nasmyth","year_started":1993,"wavelength_calibration":"ThAr","contact":"jcampbell@keck.hawaii.edu","site":"https://www2.keck.hawaii.edu/inst/hires/","paper":"https://ui.adsabs.harvard.edu/abs/1994SPIE.2198..362V/abstract","efficiency_note":null},{"id":"KPF","name":"KPF","section":"PRESENT/VISIBLE","observatory":"Keck Observatory, Hawaii","telescope":"Keck I telescope","telescope_size_m":10.0,"lat_deg":19.825946547222223,"hemisphere":"N","bw_min_nm":445.0,"bw_max_nm":870.0,"res_min":98000.0,"res_max":98000.0,"efficiency_min":0.08,"efficiency_max":0.1,"precision_min_ms":0.3,"precision_max_ms":0.3,"method":"Fiber","configurations":1.0,"aperture_on_sky":null,"focus":"Nasmyth","year_started":2022,"wavelength_calibration":"LFC-ThAr-Une","contact":"kpf_info@keck.hawaii.edu","site":"https://www2.keck.hawaii.edu/inst/kpf/","paper":"https://authors.library.caltech.edu/records/c0hv1-hks70","efficiency_note":null},{"id":"HARPS (S)","name":"HARPS (S)","section":"PRESENT/VISIBLE","observatory":"La Silla Observatory, Chile","telescope":"3.6 m telescope","telescope_size_m":3.6,"lat_deg":-29.26097222222222,"hemisphere":"S","bw_min_nm":378.0,"bw_max_nm":691.0,"res_min":120000.0,"res_max":120000.0,"efficiency_min":0.05,"efficiency_max":0.05,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1''","focus":"Cassegrain","year_started":2003,"wavelength_calibration":"LFC-ThAr","contact":"glocurto@eso.org","site":"https://www.eso.org/sci/facilities/lasilla/instruments/harps.html","paper":"https://www.eso.org/sci/facilities/lasilla/instruments/harps/science/papers/harps_mess114.pdf","efficiency_note":null},{"id":"CORALIE","name":"CORALIE","section":"PRESENT/VISIBLE","observatory":"La Silla Observatory, Chile","telescope":"Euler","telescope_size_m":1.2,"lat_deg":-29.259444444444444,"hemisphere":"S","bw_min_nm":380.0,"bw_max_nm":690.0,"res_min":60000.0,"res_max":60000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2''","focus":"Nasmyth","year_started":1998,"wavelength_calibration":"ThAr","contact":"pedro.figueira@unige.ch","site":"https://www.eso.org/public/teles-instr/lasilla/swiss/coralie/","paper":"https://www.aanda.org/articles/aa/abs/2013/03/aa19639-12/aa19639-12.html","efficiency_note":null},{"id":"UVES","name":"UVES","section":"PRESENT/VISIBLE","observatory":"ESO Paranal Observatory, Chile","telescope":"VLT Unit Telescope 2","telescope_size_m":8.2,"lat_deg":-24.627166666666668,"hemisphere":"S","bw_min_nm":300.0,"bw_max_nm":1100.0,"res_min":80000.0,"res_max":110000.0,"efficiency_min":0.07,"efficiency_max":0.14,"precision_min_ms":500.0,"precision_max_ms":500.0,"method":"Different slits","configurations":"2 (blue-red)","aperture_on_sky":"0.16''-0.22''","focus":"Nasmyth B","year_started":1999,"wavelength_calibration":"Iodine cell","contact":"lsbordon@eso.org","site":"https://www.eso.org/sci/facilities/paranal/instruments/uves/overview.html","paper":"https://sci-hub.se/10.1117/12.395512","efficiency_note":null},{"id":"ESPRESSO","name":"ESPRESSO","section":"PRESENT/VISIBLE","observatory":"ESO Paranal Observatory, Chile","telescope":"VLT - Unit Telescope 1-4","telescope_size_m":8.2,"lat_deg":-24.6272,"hemisphere":"S","bw_min_nm":380.0,"bw_max_nm":788.0,"res_min":70000.0,"res_max":190000.0,"efficiency_min":0.01,"efficiency_max":0.11,"precision_min_ms":0.1,"precision_max_ms":5.0,"method":"Fiber","configurations":3.0,"aperture_on_sky":"0.5''-1''","focus":"Coud\u00e9","year_started":2017,"wavelength_calibration":"LFC-ThAr","contact":"Francesco Pepe","site":"https://www.eso.org/sci/facilities/paranal/instruments/espresso.html#par_title","paper":"https://ui.adsabs.harvard.edu/abs/2014AN....335....8P/abstract","efficiency_note":null},{"id":"HARPS (N)","name":"HARPS (N)","section":"PRESENT/VISIBLE","observatory":"Roque de los Muchachos Observatory, La Palma","telescope":"Telescopio Nazionale Galileo","telescope_size_m":3.58,"lat_deg":28.75239722222222,"hemisphere":"N","bw_min_nm":383.0,"bw_max_nm":690.0,"res_min":115000.0,"res_max":115000.0,"efficiency_min":0.08,"efficiency_max":0.08,"precision_min_ms":0.3,"precision_max_ms":0.3,"method":"Fiber","configurations":"one","aperture_on_sky":"1''","focus":"Nasmyth","year_started":2012,"wavelength_calibration":"ThAr","contact":"cosentino@tng.iac.es","site":"https://www.tng.iac.es/instruments/harps/","paper":"https://plone.unige.ch/HARPS-N/science-with-harps-n/publications/SPIE8446-66-HARPS-N-submitted.pdf","efficiency_note":null},{"id":"FIES+","name":"FIES+","section":"PRESENT/VISIBLE","observatory":"Roque de los Muchachos Observatory, La Palma","telescope":"Nordic Optical Telescope, La Palma","telescope_size_m":2.56,"lat_deg":28.754330555555555,"hemisphere":"N","bw_min_nm":370.0,"bw_max_nm":730.0,"res_min":25000.0,"res_max":67000.0,"efficiency_min":0.04,"efficiency_max":0.09,"precision_min_ms":5.0,"precision_max_ms":10.0,"method":"Fiber","configurations":"3 (high,med,low RES)","aperture_on_sky":"1.3''-2.5''","focus":"Cassegrain","year_started":2006,"wavelength_calibration":"ThAr","contact":"jht@not.iac.es","site":"https://www.not.iac.es/instruments/fies/","paper":"https://sci-hub.se/10.1002/asna.201312007","efficiency_note":null},{"id":"SOPHIE","name":"SOPHIE","section":"PRESENT/VISIBLE","observatory":"Haute-Provence Observatory, France","telescope":"1.93-meter telescope","telescope_size_m":1.93,"lat_deg":43.92944444444444,"hemisphere":"N","bw_min_nm":387.0,"bw_max_nm":694.0,"res_min":40000.0,"res_max":75000.0,"efficiency_min":0.019,"efficiency_max":0.1,"precision_min_ms":2.0,"precision_max_ms":3.0,"method":"Fiber","configurations":"2 (HE,HR)","aperture_on_sky":"3''","focus":"Cassegrain","year_started":2006,"wavelength_calibration":"Th","contact":"francois.moreau@osupytheas.fr","site":"http://www.obs-hp.fr/guide/sophie/sophie-eng.shtml","paper":"https://arxiv.org/pdf/1506.07144.pdf","efficiency_note":null},{"id":"EXPRES","name":"EXPRES","section":"PRESENT/VISIBLE","observatory":"Lowell Observatory, Arizona","telescope":"Discovery Channel Telescope","telescope_size_m":4.3,"lat_deg":34.74444444444445,"hemisphere":"N","bw_min_nm":380.0,"bw_max_nm":680.0,"res_min":150000.0,"res_max":150000.0,"efficiency_min":0.085,"efficiency_max":0.22,"precision_min_ms":0.15,"precision_max_ms":0.15,"method":"Fiber","configurations":1.0,"aperture_on_sky":"0.9''","focus":"Cassegrain","year_started":2019,"wavelength_calibration":"LFC-ThAr","contact":"colby.jurgenson@yale.edu","site":"http://exoplanets.astro.yale.edu/instrumentation/expres.php","paper":"https://arxiv.org/pdf/1606.04413.pdf","efficiency_note":null},{"id":"PEPSI","name":"PEPSI","section":"PRESENT/VISIBLE","observatory":"Mount Graham International Observatory, Arizona","telescope":"Large Binocular Telescope","telescope_size_m":8.4,"lat_deg":32.701600000000006,"hemisphere":"N","bw_min_nm":383.0,"bw_max_nm":912.0,"res_min":50000.0,"res_max":250000.0,"efficiency_min":0.062,"efficiency_max":0.062,"precision_min_ms":4.0,"precision_max_ms":4.0,"method":"Fiber","configurations":3.0,"aperture_on_sky":"0.74''-2.3''","focus":"Gregorian","year_started":2015,"wavelength_calibration":"ThAr","contact":"kstrassmeier@aip.de","site":"https://pepsi.aip.de/","paper":"https://arxiv.org/abs/1505.06492","efficiency_note":null},{"id":"MAROON-X","name":"MAROON-X","section":"PRESENT/VISIBLE","observatory":"Gemini North Observatory","telescope":"Gemini North telescope","telescope_size_m":8.1,"lat_deg":19.816777777777776,"hemisphere":"N","bw_min_nm":500.0,"bw_max_nm":920.0,"res_min":82000.0,"res_max":88000.0,"efficiency_min":0.04,"efficiency_max":0.08,"precision_min_ms":0.25,"precision_max_ms":1.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"0.77''","focus":"Cassegrain","year_started":2019,"wavelength_calibration":"LFC-ThAr","contact":"maroonx_science@gemini.edu","site":"https://www.gemini.edu/instrumentation/maroon-x","paper":"https://astro.uchicago.edu/~jbean/documents/SPIE2018_MAROON_X.pdf","efficiency_note":null},{"id":"NRES1","name":"NRES1","section":"PRESENT/VISIBLE","observatory":"McDonald Observatory, Texas","telescope":"1 m Telescope","telescope_size_m":1.0,"lat_deg":30.679833000000002,"hemisphere":"N","bw_min_nm":390.0,"bw_max_nm":860.0,"res_min":53000.0,"res_max":53000.0,"efficiency_min":0.04,"efficiency_max":0.2,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.58''","focus":"Cassegrain","year_started":2017,"wavelength_calibration":"ThAr","contact":"science-support@lco.global","site":"https://lco.global/observatory/instruments/nres/","paper":"https://sci-hub.se/10.1117/12.2233188","efficiency_note":null},{"id":"NRES2","name":"NRES2","section":"PRESENT/VISIBLE","observatory":"Cerro Tololo Inter-American Observatory, Chile","telescope":"1 m Telescope","telescope_size_m":1.0,"lat_deg":null,"hemisphere":null,"bw_min_nm":390.0,"bw_max_nm":860.0,"res_min":53000.0,"res_max":53000.0,"efficiency_min":0.04,"efficiency_max":0.2,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.58''","focus":"Cassegrain","year_started":2017,"wavelength_calibration":"ThAr","contact":"science-support@lco.global","site":"https://lco.global/observatory/instruments/nres/","paper":"https://sci-hub.se/10.1117/12.2233188","efficiency_note":null},{"id":"NRES3","name":"NRES3","section":"PRESENT/VISIBLE","observatory":"South Affrican Astronomical Observatory, South Africa","telescope":"1 m Telescope","telescope_size_m":1.0,"lat_deg":null,"hemisphere":null,"bw_min_nm":390.0,"bw_max_nm":860.0,"res_min":53000.0,"res_max":53000.0,"efficiency_min":0.04,"efficiency_max":0.2,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.58''","focus":"Cassegrain","year_started":2017,"wavelength_calibration":"ThAr","contact":"science-support@lco.global","site":"https://lco.global/observatory/instruments/nres/","paper":"https://sci-hub.se/10.1117/12.2233188","efficiency_note":null},{"id":"NRES4","name":"NRES4","section":"PRESENT/VISIBLE","observatory":"Wise Observatory, Israel","telescope":"1 m Telescope","telescope_size_m":1.0,"lat_deg":30.595833,"hemisphere":"N","bw_min_nm":390.0,"bw_max_nm":860.0,"res_min":53000.0,"res_max":53000.0,"efficiency_min":0.04,"efficiency_max":0.2,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.58''","focus":"Cassegrain","year_started":2017,"wavelength_calibration":"ThAr","contact":"science-support@lco.global","site":"https://lco.global/observatory/instruments/nres/","paper":"https://sci-hub.se/10.1117/12.2233188","efficiency_note":null},{"id":"SALT HRS","name":"SALT HRS","section":"PRESENT/VISIBLE","observatory":"South Affrican Astronomical Observatory, South Africa","telescope":"Southern African Large Telescope","telescope_size_m":11.1,"lat_deg":-32.37226944444444,"hemisphere":"S","bw_min_nm":370.0,"bw_max_nm":890.0,"res_min":16500.0,"res_max":60000.0,"efficiency_min":0.04,"efficiency_max":0.15,"precision_min_ms":3.0,"precision_max_ms":4.0,"method":"Fiber","configurations":4.0,"aperture_on_sky":"1.6''-2.2''","focus":"PFIP","year_started":2013,"wavelength_calibration":"ThAr","contact":"lisa@saao.ac.za","site":"https://astronomers.salt.ac.za/instruments/hrs/","paper":"https://sci-hub.se/10.1117/12.925935","efficiency_note":null},{"id":"CHIRON","name":"CHIRON","section":"PRESENT/VISIBLE","observatory":"CTIO Observatory, Chile","telescope":"SMARTS","telescope_size_m":1.5,"lat_deg":-30.169286111111113,"hemisphere":"S","bw_min_nm":410.0,"bw_max_nm":870.0,"res_min":25000.0,"res_max":140000.0,"efficiency_min":0.06,"efficiency_max":0.06,"precision_min_ms":0.6,"precision_max_ms":0.6,"method":"Fiber","configurations":"many","aperture_on_sky":"2.7''","focus":"Cassegrain","year_started":2012,"wavelength_calibration":"ThAr - Iodine cell","contact":"chironhelp@astro.gsu.edu","site":"https://noirlab.edu/science/programs/ctio/instruments/chiron","paper":"https://noirlab.edu/science/sites/default/files/media/archives/documents/scidoc0566.pdf","efficiency_note":null},{"id":"FIDEOS","name":"FIDEOS","section":"PRESENT/VISIBLE","observatory":"La Silla Observatory, Chile","telescope":"1.52-m telescope","telescope_size_m":1.52,"lat_deg":-29.251944444444444,"hemisphere":"S","bw_min_nm":400.0,"bw_max_nm":680.0,"res_min":42000.0,"res_max":42000.0,"efficiency_min":0.08,"efficiency_max":0.08,"precision_min_ms":5.0,"precision_max_ms":20.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1.87''","focus":"Cassegrain","year_started":2016,"wavelength_calibration":"ThAr","contact":"lvanzi@uc.cl","site":"https://www.eso.org/public/teles-instr/lasilla/1metre/fideos/","paper":"https://sci-hub.se/10.1093/mnras/sty936","efficiency_note":null},{"id":"PFS","name":"PFS","section":"PRESENT/VISIBLE","observatory":"Las Campanas Observatory, Chile","telescope":"Magellan II Telescope","telescope_size_m":6.5,"lat_deg":-29.01418,"hemisphere":"S","bw_min_nm":391.0,"bw_max_nm":734.0,"res_min":38000.0,"res_max":190000.0,"efficiency_min":0.05,"efficiency_max":0.23,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Slit","configurations":"many","aperture_on_sky":"0.3''-1''","focus":"Nasmyth","year_started":2010,"wavelength_calibration":"ThAr - Iodine cell","contact":"crane@obs.carnegiescience.edu","site":"https://users.obs.carnegiescience.edu/crane/pfs/","paper":"https://sci-hub.se/10.1117/12.857792","efficiency_note":"Spectrograph only (excludes atmosphere + telescope)"},{"id":"NEID","name":"NEID","section":"PRESENT/VISIBLE","observatory":"Kitt Peak\u00a0National\u00a0Observatory, Arizona","telescope":"WIYN Telescope","telescope_size_m":3.5,"lat_deg":31.958166666666667,"hemisphere":"N","bw_min_nm":380.0,"bw_max_nm":930.0,"res_min":60000.0,"res_max":110000.0,"efficiency_min":0.04,"efficiency_max":0.08,"precision_min_ms":0.5,"precision_max_ms":0.5,"method":"Fiber","configurations":2.0,"aperture_on_sky":"0.9''-1.5''","focus":"Cassegrain","year_started":2021,"wavelength_calibration":"LFC-ThAr-Une","contact":"arvind@psu.edu","site":"https://neid.psu.edu/","paper":"https://arxiv.org/pdf/2210.00550.pdf","efficiency_note":null},{"id":"PARAS","name":"PARAS","section":"PRESENT/VISIBLE","observatory":"Mount Abu Observatory, India","telescope":"PRL 1.2 m telescope","telescope_size_m":1.2,"lat_deg":24.65,"hemisphere":"N","bw_min_nm":380.0,"bw_max_nm":690.0,"res_min":67000.0,"res_max":67000.0,"efficiency_min":0.07,"efficiency_max":0.07,"precision_min_ms":2.0,"precision_max_ms":2.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1.9''","focus":"Cassegrain","year_started":2012,"wavelength_calibration":"ThAr","contact":"abhijit@prl.res.in","site":"https://www.prl.res.in/~miro/paras.html","paper":"https://arxiv.org/pdf/1312.5471.pdf","efficiency_note":null},{"id":"PARAS 2","name":"PARAS 2","section":"PRESENT/VISIBLE","observatory":"Mount Abu Observatory, India","telescope":"PRL 2.5 m telescope","telescope_size_m":2.5,"lat_deg":24.591666666666665,"hemisphere":"N","bw_min_nm":380.0,"bw_max_nm":690.0,"res_min":107000.0,"res_max":107000.0,"efficiency_min":0.04,"efficiency_max":0.08,"precision_min_ms":0.3,"precision_max_ms":0.3,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1.5''","focus":"Cassegrain","year_started":2023,"wavelength_calibration":"UAr","contact":"abhijit@prl.res.in","site":"https://www.prl.res.in/~miro/paras2.html","paper":"https://authors.library.caltech.edu/records/gkmbc-b5739","efficiency_note":null},{"id":"GHOST","name":"GHOST","section":"PRESENT/VISIBLE","observatory":"Cerro Pach\u00f3n, Chile","telescope":"Gemini South telescope","telescope_size_m":8.1,"lat_deg":-30.233472222222222,"hemisphere":"S","bw_min_nm":348.0,"bw_max_nm":1061.0,"res_min":76000.0,"res_max":76000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":10.0,"precision_max_ms":10.0,"method":"Fiber","configurations":2.0,"aperture_on_sky":"1.2''","focus":"Cassegrain","year_started":2022,"wavelength_calibration":"ThAr-ThXe","contact":"ghost_science@noirlab.edu","site":"https://www.gemini.edu/instrumentation/ghost","paper":"https://iopscience.iop.org/article/10.1088/1538-3873/ad1ed4/pdf","efficiency_note":null},{"id":"LEVY","name":"LEVY","section":"PRESENT/VISIBLE","observatory":"Lick Observatory, California","telescope":"Automated Planet Finder","telescope_size_m":2.4,"lat_deg":37.34254166666667,"hemisphere":"N","bw_min_nm":372.0,"bw_max_nm":980.0,"res_min":40000.0,"res_max":120000.0,"efficiency_min":0.12,"efficiency_max":0.15,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Slits","configurations":"Many","aperture_on_sky":"Mainly 1''x3'' (many other slits)","focus":"Nasmyth","year_started":2014,"wavelength_calibration":"ThAr-Ne, Iodine-cell","contact":"vogt@ucolick.org","site":"https://apf.ucolick.org/","paper":"https://iopscience.iop.org/article/10.1086/676120/pdf","efficiency_note":null},{"id":"HAMILTON","name":"HAMILTON","section":"PRESENT/VISIBLE","observatory":"Lick Observatory, California","telescope":"Shane (or CAT, I only put Shane data)","telescope_size_m":3.0,"lat_deg":37.33915277777778,"hemisphere":"N","bw_min_nm":350.0,"bw_max_nm":1000.0,"res_min":60000.0,"res_max":100000.0,"efficiency_min":0.04,"efficiency_max":0.05,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"Slits","configurations":"2 slits","aperture_on_sky":"0.2''-1.2''","focus":"Coud\u00e9","year_started":1987,"wavelength_calibration":"ThAr - Iodine cell","contact":"sa@ucolick.org","site":"https://mthamilton.ucolick.org/techdocs/instruments/hamspec/intro/","paper":"https://iopscience.iop.org/article/10.1086/132107/pdf","efficiency_note":null},{"id":"KiwiSpec-Whipple","name":"KiwiSpec","section":"PRESENT/VISIBLE","observatory":"Fred Lawrence Whipple Observatory, Arizona","telescope":"Minerva facility","telescope_size_m":0.7,"lat_deg":31.666666666666668,"hemisphere":"N","bw_min_nm":500.0,"bw_max_nm":630.0,"res_min":80000.0,"res_max":80000.0,"efficiency_min":0.05,"efficiency_max":0.05,"precision_min_ms":0.8,"precision_max_ms":0.8,"method":"4 Fibers","configurations":1.0,"aperture_on_sky":"2.27''","focus":"Nasmyth","year_started":2017,"wavelength_calibration":"ThAr-Iodine cell","contact":"jswift@astro.caltech.edu","site":"https://lweb.cfa.harvard.edu/minerva/","paper":"https://sci-hub.se/10.1117/1.jatis.1.2.027002","efficiency_note":null},{"id":"KiwiSpec-Australia","name":"KiwiSpec","section":"PRESENT/VISIBLE","observatory":"Mount Kent Observatory, Australia","telescope":"Minerva Australis facility","telescope_size_m":0.7,"lat_deg":null,"hemisphere":null,"bw_min_nm":500.0,"bw_max_nm":630.0,"res_min":80000.0,"res_max":80000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":0.8,"precision_max_ms":0.8,"method":"6 Fibers","configurations":1.0,"aperture_on_sky":null,"focus":"Nasmyth","year_started":2019,"wavelength_calibration":"ThAr","contact":"brett.addison@usq.edu.au","site":"https://astrophysics.unisq.edu.au/minerva-australis/","paper":"https://arxiv.org/pdf/1901.11231.pdf","efficiency_note":null},{"id":"CARMENES","name":"CARMENES","section":"INFRA-RED","observatory":"Calar Alto Observatory, Spain","telescope":"3.5 m telescope","telescope_size_m":3.5,"lat_deg":37.220791,"hemisphere":"N","bw_min_nm":520.0,"bw_max_nm":1710.0,"res_min":80000.0,"res_max":94000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber-IS","configurations":1.0,"aperture_on_sky":"1.5''","focus":"Cassegrain","year_started":2015,"wavelength_calibration":"Th-Ne,U-Ne","contact":"A.Quirrenbach@lsw.uni-heidelberg.de","site":"https://carmenes.caha.es/ext/instrument/index.html","paper":"https://www.researchgate.net/publication/268208685_CARMENES_instrument_overview","efficiency_note":null},{"id":"VELOCE 'Rosso'","name":"VELOCE 'Rosso'","section":"INFRA-RED","observatory":"Siding Spring Observatory, Australia","telescope":"Anglo-Australian Telescope","telescope_size_m":3.9,"lat_deg":-31.275399999999998,"hemisphere":"S","bw_min_nm":596.0,"bw_max_nm":940.0,"res_min":80000.0,"res_max":80000.0,"efficiency_min":0.21,"efficiency_max":0.4,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.4''","focus":"Cassegrain","year_started":2018,"wavelength_calibration":"LFC-ThXe","contact":"c.tinney@unsw.edu.au","site":"https://aat.anu.edu.au/science/instruments/current/veloce/overview","paper":"https://arxiv.org/pdf/1807.01938.pdf","efficiency_note":"Spectrograph only (excludes atmosphere + telescope)"},{"id":"PARVI","name":"PARVI","section":"INFRA-RED","observatory":"Palomar Observatory","telescope":"Hale telescope","telescope_size_m":5.08,"lat_deg":33.35378055555556,"hemisphere":"N","bw_min_nm":1145.0,"bw_max_nm":1766.0,"res_min":100000.0,"res_max":100000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":0.3,"precision_max_ms":3.0,"method":"4 Fiber","configurations":1.0,"aperture_on_sky":"0.091''","focus":"Cassegrain","year_started":2019,"wavelength_calibration":"LFC","contact":"Lewis.C.Roberts@jpl.nasa.gov","site":"https://ao.jpl.nasa.gov/PARVI.html","paper":"file:///Users/maddalenabugatti/Downloads/Gibson_columbia_0054D_17660.pdf","efficiency_note":null},{"id":"GIANO-B","name":"GIANO-B","section":"RED","observatory":"Roque de los Muchachos Observatory, La Palma","telescope":"Telescopio Nazionale Galileo","telescope_size_m":3.58,"lat_deg":28.75239722222222,"hemisphere":"N","bw_min_nm":950.0,"bw_max_nm":2500.0,"res_min":50000.0,"res_max":50000.0,"efficiency_min":0.06,"efficiency_max":0.09,"precision_min_ms":10.0,"precision_max_ms":10.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1''","focus":"Nasmyth","year_started":2012,"wavelength_calibration":"UNe","contact":"livia.origlia@oabo.inaf.it","site":"http://www.bo.astro.it/giano/GIANO/GIANO_Overview.html","paper":"https://www.arcetri.inaf.it/irlab/doc/spie_12/giano_towards_first_light_8446_146.pdf","efficiency_note":null},{"id":"CRIRES +","name":"CRIRES +","section":"RED","observatory":"ESO Paranal Observatory, Chile","telescope":"VLT Unit Telescope 3","telescope_size_m":8.2,"lat_deg":-24.626844444444444,"hemisphere":"S","bw_min_nm":946.0,"bw_max_nm":5300.0,"res_min":86000.0,"res_max":92000.0,"efficiency_min":0.1,"efficiency_max":0.2,"precision_min_ms":3.0,"precision_max_ms":3.0,"method":"2-Slits","configurations":"6 bands","aperture_on_sky":"0.2''-0.4''","focus":"Nasmyth B","year_started":2021,"wavelength_calibration":"Gas-cell, UNe","contact":"jsmoker@eso.org","site":"https://www.eso.org/sci/facilities/paranal/instruments/crires/overview.html","paper":"https://www.eso.org/sci/facilities/develop/instruments/CRIRES_up/CRIRES_up_Overview.pdf","efficiency_note":"Spectrograph only (excludes atmosphere + telescope)"},{"id":"HPF","name":"HPF","section":"RED","observatory":"McDonald Observatory, Texas","telescope":"Hobby-Eberly Telescope","telescope_size_m":9.2,"lat_deg":30.681,"hemisphere":"N","bw_min_nm":810.0,"bw_max_nm":1280.0,"res_min":53000.0,"res_max":53000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber-Image slicer","configurations":1.0,"aperture_on_sky":"1.7''","focus":"Prime focus","year_started":2017,"wavelength_calibration":"LFC-UNe","contact":"suvrath@astro.psu.edu","site":"https://psuastro.github.io/HPF/Home/","paper":"https://sci-hub.se/10.1117/12.2056417","efficiency_note":null},{"id":"NIRPS","name":"NIRPS","section":"RED","observatory":"La Silla Observatory, Chile","telescope":"3.6 telescope","telescope_size_m":3.6,"lat_deg":-29.26097222222222,"hemisphere":"S","bw_min_nm":970.0,"bw_max_nm":1810.0,"res_min":75000.0,"res_max":100000.0,"efficiency_min":0.04,"efficiency_max":0.13,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber","configurations":2.0,"aperture_on_sky":"0.4''-0.9''","focus":"Coud\u00e9","year_started":2022,"wavelength_calibration":"LFC -UNe + UAr - ThAr","contact":"francois.wildi@unige.ch","site":"https://www.astro.umontreal.ca/nirps/?page_id=295","paper":"https://obswww.unige.ch/~wildif/publications/2017_10400-41_Wildi_NIRPS.pdf","efficiency_note":null},{"id":"SPIRou","name":"SPIRou","section":"RED","observatory":"Canada-France-Hawaii observatory, Hawaii","telescope":"Canada-France-Hawaii Telescope\u00a0","telescope_size_m":3.58,"lat_deg":19.828294444444445,"hemisphere":"N","bw_min_nm":980.0,"bw_max_nm":2440.0,"res_min":70000.0,"res_max":70000.0,"efficiency_min":0.07,"efficiency_max":0.09,"precision_min_ms":2.0,"precision_max_ms":2.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1.296''","focus":"Cassegrain","year_started":2018,"wavelength_calibration":"UNe","contact":"jean-francois.donati@irap.omp.eu","site":"https://www.cfht.hawaii.edu/Instruments/SPIRou/","paper":"https://arxiv.org/pdf/2008.08949.pdf","efficiency_note":null},{"id":"IRD","name":"IRD","section":"RED","observatory":"National Astronomical Observatory of Japan, Hawaii","telescope":"Subaru telescope","telescope_size_m":8.2,"lat_deg":19.825555555555557,"hemisphere":"N","bw_min_nm":970.0,"bw_max_nm":1750.0,"res_min":70000.0,"res_max":100000.0,"efficiency_min":0.023,"efficiency_max":0.039,"precision_min_ms":2.0,"precision_max_ms":2.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"0.48''","focus":"Nasmyth","year_started":2017,"wavelength_calibration":"LFC-ThAr","contact":"ird_tech@ird.mtk.nao.ac.jp","site":"https://ird.mtk.nao.ac.jp/IRDpub/index_tmp.html","paper":"https://www.researchgate.net/publication/326386908_The_infrared_Doppler_IRD_instrument_for_the_Subaru_telescope_instrument_description_and_commissioning_results","efficiency_note":null},{"id":"iLOCATOR","name":"iLOCATOR","section":"RED","observatory":"Mount Graham International Observatory, Arizona","telescope":"Large Binocular Telescope","telescope_size_m":8.4,"lat_deg":32.701600000000006,"hemisphere":"N","bw_min_nm":970.0,"bw_max_nm":1310.0,"res_min":125000.0,"res_max":281000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":1.0,"precision_max_ms":1.0,"method":"Fiber","configurations":1.0,"aperture_on_sky":"0.04''","focus":"Gregorian","year_started":2023,"wavelength_calibration":"Rb Etalon ","contact":"j.crass@nd.edu","site":"https://ilocater.nd.edu/","paper":"https://arxiv.org/pdf/2209.00009.pdf","efficiency_note":null},{"id":"HET HRS2","name":"HET HRS2","section":"FUTURE","observatory":"McDonald Observatory, Texas","telescope":"Hobby-Eberly Telescope","telescope_size_m":9.2,"lat_deg":30.681,"hemisphere":"N","bw_min_nm":420.0,"bw_max_nm":1100.0,"res_min":18000.0,"res_max":105000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":null,"precision_max_ms":null,"method":"Fiber","configurations":4.0,"aperture_on_sky":null,"focus":"Prime focus","year_started":null,"wavelength_calibration":"Iodine cell","contact":"good@astro.as.utexas.edu","site":"https://het.as.utexas.edu/HET/hetweb/Instruments/HRS/hrs_perf.html","paper":null,"efficiency_note":null},{"id":"TARdYS","name":"TARdYS","section":"FUTURE","observatory":"University of Tokyo Atacama Observatory, Chile","telescope":"6.5 m telescope","telescope_size_m":6.5,"lat_deg":null,"hemisphere":null,"bw_min_nm":843.0,"bw_max_nm":1117.0,"res_min":60000.0,"res_max":60000.0,"efficiency_min":0.1,"efficiency_max":0.1,"precision_min_ms":2.0,"precision_max_ms":3.0,"method":"Fiber-Image slicer","configurations":1.0,"aperture_on_sky":"0.4''","focus":null,"year_started":null,"wavelength_calibration":"Uranium","contact":"surangkhanar@gmail.com","site":null,"paper":"https://sci-hub.3800808.com/10.1007/s10686-019-09642-y","efficiency_note":null},{"id":"PlatoSpec","name":"PlatoSpec","section":"FUTURE","observatory":"La Silla Observatory, Chile","telescope":"1.52-m telescope","telescope_size_m":1.52,"lat_deg":-29.251944444444444,"hemisphere":"S","bw_min_nm":360.0,"bw_max_nm":680.0,"res_min":70000.0,"res_max":70000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":5.0,"precision_max_ms":5.0,"method":"Fiber","configurations":2.0,"aperture_on_sky":"1.8''-2''","focus":"Cassegrian","year_started":2024,"wavelength_calibration":"ThAr, Iodine-cell","contact":"lvanzi @ ing.puc.cl","site":"https://stel.asu.cas.cz/plato/spectrograph.html","paper":"https://arxiv.org/pdf/2109.07168.pdf","efficiency_note":null},{"id":"VELOCE 'verde'","name":"VELOCE 'verde'","section":"FUTURE","observatory":"Siding Spring Observatory","telescope":"Anglo-Australian Telescope","telescope_size_m":3.9,"lat_deg":-31.275399999999998,"hemisphere":"S","bw_min_nm":442.0,"bw_max_nm":596.0,"res_min":80000.0,"res_max":80000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":null,"precision_max_ms":null,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.4''","focus":"Cassegrain","year_started":null,"wavelength_calibration":"LFC-ThXe","contact":"c.tinney@unsw.edu.au","site":"https://aat.anu.edu.au/science/instruments/current/veloce/overview","paper":null,"efficiency_note":null},{"id":"VELOCE 'Azzurro'","name":"VELOCE 'Azzurro'","section":"FUTURE","observatory":"Siding Spring Observatory","telescope":"Anglo-Australian Telescope","telescope_size_m":3.9,"lat_deg":-31.275399999999998,"hemisphere":"S","bw_min_nm":396.0,"bw_max_nm":442.0,"res_min":80000.0,"res_max":80000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":null,"precision_max_ms":null,"method":"Fiber","configurations":1.0,"aperture_on_sky":"2.4''","focus":"Cassegrain","year_started":null,"wavelength_calibration":"ThXe","contact":"c.tinney@unsw.edu.au","site":"https://aat.anu.edu.au/science/instruments/current/veloce/overview","paper":null,"efficiency_note":null},{"id":"G-CLEF","name":"G-CLEF","section":"FUTURE","observatory":"Las Campanas Observatory, Chile","telescope":"Giant Magellan Telescope","telescope_size_m":24.5,"lat_deg":-29.048333333333336,"hemisphere":"S","bw_min_nm":350.0,"bw_max_nm":900.0,"res_min":23000.0,"res_max":110000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":0.1,"precision_max_ms":0.1,"method":"Fiber","configurations":4.0,"aperture_on_sky":"0.8''-1.2''","focus":"Gregorian","year_started":null,"wavelength_calibration":"LFC-ThAr","contact":"saint@cfa.harvard.edu","site":"https://gclef.cfa.harvard.edu/","paper":"https://gclef.cfa.harvard.edu/wp-content/uploads/2016/07/2014SPIE.91479G.pdf","efficiency_note":null},{"id":"ANDES (HIRES)","name":"ANDES (HIRES)","section":"FUTURE","observatory":"Cerro Armazones Observatory, Chile","telescope":"Extreme Large Telescope","telescope_size_m":39.0,"lat_deg":-24.58666388888889,"hemisphere":"S","bw_min_nm":350.0,"bw_max_nm":1800.0,"res_min":100000.0,"res_max":100000.0,"efficiency_min":null,"efficiency_max":null,"precision_min_ms":0.1,"precision_max_ms":0.1,"method":"Fiber","configurations":"3 spectrographs","aperture_on_sky":null,"focus":"Nasmyth","year_started":null,"wavelength_calibration":null,"contact":"alessandro.marconi@inaf.it","site":"https://elt.eso.org/instrument/ANDES/","paper":"https://backend.orbit.dtu.dk/ws/portalfiles/portal/295097704/1218424.pdf","efficiency_note":null},{"id":"CODEX","name":"CODEX","section":"FUTURE","observatory":"Cerro Armazones Observatory, Chile","telescope":"Extreme Large Telescope","telescope_size_m":39.0,"lat_deg":-24.58666388888889,"hemisphere":"S","bw_min_nm":380.0,"bw_max_nm":680.0,"res_min":90000.0,"res_max":130000.0,"efficiency_min":0.12,"efficiency_max":0.12,"precision_min_ms":0.02,"precision_max_ms":0.02,"method":"Fiber","configurations":1.0,"aperture_on_sky":"1''","focus":"Coud\u00e9","year_started":null,"wavelength_calibration":"LFC","contact":"lpasquin@eso.org","site":"http://research.iac.es/proyecto/codex//","paper":"https://www.eso.org/sci/libraries/SPIE2010/7735-85.pdf","efficiency_note":"Spectrograph only (excludes atmosphere + telescope)"}]
+;
+
+const SECTION_META = {
+  'PRESENT/VISIBLE': { label:'Visible', color:'var(--cat-visible)', hex:{light:'#2a78d6',dark:'#3987e5'} },
+  'RED':             { label:'Red',     color:'var(--cat-red)',     hex:{light:'#eb6834',dark:'#d95926'} },
+  'INFRA-RED':       { label:'Infra-red', color:'var(--cat-ir)',    hex:{light:'#1baf7a',dark:'#199e70'} },
+  'FUTURE':          { label:'Future',  color:'var(--cat-future)',  hex:{light:'#6b7280',dark:'#8A93A5'}, pattern:true },
+};
+const SECTION_ORDER = ['PRESENT/VISIBLE','RED','INFRA-RED','FUTURE'];
+
+function isDark(){
+  const t = document.documentElement.getAttribute('data-theme');
+  if(t === 'dark') return true;
+  if(t === 'light') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+/* ---------------- wavelength -> spectral colour ---------------- */
+function wavelengthToRGB(nm){
+  if(nm > 750){
+    const t = Math.min(1, (nm-750)/500);
+    const dr = 180, dg = 40, db = 40;
+    const gr = isDark()?110:120, gg = isDark()?116:120, gb = isDark()?128:126;
+    const r = dr + (gr-dr)*t, g = dg + (gg-dg)*t, b = db + (gb-db)*t;
+    return [r,g,b];
+  }
+  if(nm < 380){
+    const t = Math.min(1, (380-nm)/120);
+    const vr=120, vg=40, vb=160;
+    const gr = isDark()?110:120, gg=isDark()?116:120, gb=isDark()?128:126;
+    return [vr+(gr-vr)*t, vg+(gg-vg)*t, vb+(gb-vb)*t];
+  }
+  let r,g,b;
+  if(nm<440){ r=-(nm-440)/(440-380); g=0; b=1; }
+  else if(nm<490){ r=0; g=(nm-440)/(490-440); b=1; }
+  else if(nm<510){ r=0; g=1; b=-(nm-510)/(510-490); }
+  else if(nm<580){ r=(nm-510)/(580-510); g=1; b=0; }
+  else if(nm<645){ r=1; g=-(nm-645)/(645-580); b=0; }
+  else { r=1; g=0; b=0; }
+  let factor = 1;
+  if(nm<420) factor = 0.3 + 0.7*(nm-380)/(420-380);
+  else if(nm>645) factor = 0.3 + 0.7*(750-nm)/(750-645);
+  const gamma = 0.9;
+  const boost = isDark()? 1.05: 0.92;
+  const to255 = v => Math.round(255*Math.pow(Math.max(0,v*factor)*boost,gamma));
+  return [Math.min(255,to255(r)), Math.min(255,to255(g)), Math.min(255,to255(b))];
+}
+function rgbStr(a){ return `rgb(${a[0]|0},${a[1]|0},${a[2]|0})`; }
+
+/* ---------------- state ---------------- */
+const state = {
+  search:'', sections:new Set(SECTION_ORDER), hemi:'all', method:'all',
+  telMin:0, telMax:40, resMin:0, resMax:300,
+  checked:new Set(DATA.map(d=>d.id)),
+  sort:{key:'name', dir:1},
+};
+
+function methodClass(m){
+  if(!m) return 'other';
+  const s = m.toLowerCase();
+  if(s.includes('slit')) return 'slit';
+  return 'fiber';
+}
+
+function candidates(){
+  return DATA.filter(d=>{
+    if(!state.sections.has(d.section)) return false;
+    if(state.hemi!=='all' && d.hemisphere!==state.hemi) return false;
+    if(state.method!=='all' && methodClass(d.method)!==state.method) return false;
+    const tel = d.telescope_size_m;
+    if(tel!=null && (tel < state.telMin || tel > state.telMax)) return false;
+    const res = d.res_max ?? d.res_min;
+    if(res!=null && (res/1000 < state.resMin || res/1000 > state.resMax)) return false;
+    if(state.search){
+      const q = state.search.toLowerCase();
+      const hay = [d.name,d.observatory,d.telescope].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+function selected(){
+  return candidates().filter(d=>state.checked.has(d.id));
+}
+
+/* ---------------- sidebar: sections ---------------- */
+const secWrap = document.getElementById('f-sections');
+SECTION_ORDER.forEach(sec=>{
+  const meta = SECTION_META[sec];
+  const label = document.createElement('label');
+  label.className = 'chip on' + (meta.pattern?' future':'');
+  label.innerHTML = `<input type="checkbox" checked><span class="dot" style="background:${meta.pattern?'none':meta.color}"></span>${meta.label}`;
+  const input = label.querySelector('input');
+  input.addEventListener('change', ()=>{
+    if(input.checked) state.sections.add(sec); else state.sections.delete(sec);
+    label.classList.toggle('on', input.checked);
+    onFilterChange();
+  });
+  secWrap.appendChild(label);
+});
+
+function wireSeg(id, onPick){
+  const wrap = document.getElementById(id);
+  wrap.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      wrap.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      onPick(btn.dataset.v);
+    });
+  });
+}
+wireSeg('f-hemi', v=>{ state.hemi=v; onFilterChange(); });
+wireSeg('f-method', v=>{ state.method=v; onFilterChange(); });
+
+document.getElementById('f-search').addEventListener('input', e=>{
+  state.search = e.target.value.trim();
+  onFilterChange();
+});
+
+/* dual range helper */
+function wireDualRange(minEl,maxEl,fillEl,labelEl,onChange,fmt){
+  const lo = ()=>parseFloat(minEl.value), hi=()=>parseFloat(maxEl.value);
+  function paint(){
+    let a=lo(), b=hi();
+    if(a>b){ [a,b]=[b,a]; }
+    const span = parseFloat(minEl.max)-parseFloat(minEl.min);
+    const l = (a-parseFloat(minEl.min))/span*100, r=(b-parseFloat(minEl.min))/span*100;
+    fillEl.style.left = l+'%'; fillEl.style.width = (r-l)+'%';
+    labelEl.textContent = fmt(a)+' – '+fmt(b);
+  }
+  [minEl,maxEl].forEach(el=>el.addEventListener('input', ()=>{ paint(); onChange(Math.min(lo(),hi()), Math.max(lo(),hi())); }));
+  paint();
+}
+document.getElementById('f-tel-min').value = 0;
+document.getElementById('f-tel-max').value = 40;
+wireDualRange(
+  document.getElementById('f-tel-min'), document.getElementById('f-tel-max'),
+  document.getElementById('f-tel-fill'), document.getElementById('f-tel-label'),
+  (a,b)=>{ state.telMin=a; state.telMax=b; onFilterChange(); },
+  v=>v.toFixed(1)+'m'
+);
+document.getElementById('f-res-min').value = 0;
+document.getElementById('f-res-max').value = 300;
+wireDualRange(
+  document.getElementById('f-res-min'), document.getElementById('f-res-max'),
+  document.getElementById('f-res-fill'), document.getElementById('f-res-label'),
+  (a,b)=>{ state.resMin=a; state.resMax=b; onFilterChange(); },
+  v=>Math.round(v)+'k'
+);
+
+document.getElementById('sel-all').addEventListener('click', ()=>{
+  candidates().forEach(d=>state.checked.add(d.id)); renderAll();
+});
+document.getElementById('sel-none').addEventListener('click', ()=>{
+  candidates().forEach(d=>state.checked.delete(d.id)); renderAll();
+});
+
+function onFilterChange(){
+  renderAll();
+}
+
+/* ---------------- checklist ---------------- */
+function renderChecklist(){
+  const wrap = document.getElementById('checklist');
+  const cand = candidates();
+  document.getElementById('f-count-label').textContent = cand.length + '/' + DATA.length;
+  wrap.innerHTML='';
+  if(cand.length===0){
+    wrap.innerHTML = '<div class="empty-note">No instruments match these filters.</div>';
+    return;
+  }
+  cand.forEach(d=>{
+    const meta = SECTION_META[d.section];
+    const row = document.createElement('label');
+    row.className='check-row';
+    row.innerHTML = `<input type="checkbox" ${state.checked.has(d.id)?'checked':''}>
+      <span class="dot" style="background:${meta.pattern?'transparent':meta.color};${meta.pattern?`border:1px solid ${meta.color}`:''}"></span>
+      <span class="nm">${d.name}</span><span class="obs">${(d.observatory||'').split(',')[0]}</span>`;
+    row.querySelector('input').addEventListener('change', e=>{
+      if(e.target.checked) state.checked.add(d.id); else state.checked.delete(d.id);
+      renderCharts(); renderTable(); renderStats();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+/* ---------------- tooltip ---------------- */
+const tip = document.getElementById('tooltip');
+function showTip(evt, html){
+  tip.innerHTML = html; tip.classList.add('show');
+  moveTip(evt);
+}
+function moveTip(evt){
+  const pad=14;
+  let x = evt.clientX+pad, y = evt.clientY+pad;
+  if(x + 260 > window.innerWidth) x = evt.clientX - 260 - pad;
+  if(y + 90 > window.innerHeight) y = evt.clientY - 90 - pad;
+  tip.style.left = x+'px'; tip.style.top = y+'px';
+}
+function hideTip(){ tip.classList.remove('show'); }
+
+/* ---------------- SVG helpers ---------------- */
+const NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  const el = document.createElementNS(NS, tag);
+  for(const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+const LEFT_COL = 118, RIGHT_PAD = 20, ROW_H = 22, ROW_GAP = 4, TOP_PAD = 26, BOT_PAD = 30;
+
+function niceTicks(min, max, n){
+  const span = max-min || 1;
+  const rawStep = span/n;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep/mag;
+  let step = norm<1.5?1:norm<3?2:norm<7?5:10;
+  step *= mag;
+  const ticks=[];
+  let t = Math.ceil(min/step)*step;
+  for(; t<=max+1e-9; t+=step) ticks.push(Math.round(t*1000)/1000);
+  return ticks;
+}
+
+/* ---- Chart 1: wavelength coverage ---- */
+function renderWaveChart(items){
+  const svg = document.getElementById('chart-wave');
+  svg.innerHTML='';
+  const rows = items.filter(d=>d.bw_min_nm!=null).sort((a,b)=>a.bw_min_nm-b.bw_min_nm);
+  const empty = items.length - rows.length;
+  const W = 900, plotW = W-LEFT_COL-RIGHT_PAD;
+  const H = TOP_PAD + rows.length*(ROW_H+ROW_GAP) + BOT_PAD;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width','100%'); svg.setAttribute('height', H);
+
+  const domMin=300, domMax=2600;
+  const x = v => LEFT_COL + (v-domMin)/(domMax-domMin)*plotW;
+
+  const ticks = [400,700,1000,1500,2000,2500];
+  ticks.forEach(t=>{
+    svg.appendChild(svgEl('line',{class:'gridline', x1:x(t),x2:x(t), y1:TOP_PAD-10, y2:H-BOT_PAD+4}));
+    const lb = svgEl('text',{class:'axis-label', x:x(t), y:H-BOT_PAD+18, 'font-size':10.5, 'text-anchor':'middle'});
+    lb.textContent = t+'nm'; svg.appendChild(lb);
+  });
+
+  rows.forEach((d,i)=>{
+    const y = TOP_PAD + i*(ROW_H+ROW_GAP);
+    const lbl = svgEl('text',{class:'row-label', x:LEFT_COL-8, y:y+ROW_H/2+4, 'text-anchor':'end'});
+    lbl.textContent = d.name; svg.appendChild(lbl);
+
+    const x0 = x(Math.max(domMin,d.bw_min_nm)), x1 = x(Math.min(domMax,d.bw_max_nm));
+    const gid = 'grad-'+d.id.replace(/[^a-zA-Z0-9]/g,'');
+    const grad = svgEl('linearGradient',{id:gid, x1:'0%',x2:'100%',y1:'0%',y2:'0%'});
+    const steps=10;
+    for(let s=0;s<=steps;s++){
+      const nm = d.bw_min_nm + (d.bw_max_nm-d.bw_min_nm)*(s/steps);
+      grad.appendChild(svgEl('stop',{offset:(s/steps*100)+'%', 'stop-color':rgbStr(wavelengthToRGB(nm))}));
+    }
+    svg.appendChild(grad);
+
+    const bar = svgEl('rect',{x:x0, y:y+3, width:Math.max(2,x1-x0), height:ROW_H-6, rx:3, fill:`url(#${gid})`, opacity: state.checked.has(d.id)?1:0.32, stroke:'var(--border-strong)'});
+    bar.addEventListener('mousemove', evt=>{
+      showTip(evt, `<b>${d.name}</b><span class="k">${Math.round(d.bw_min_nm)}–${Math.round(d.bw_max_nm)} nm</span><br><span class="k">${d.observatory||''}</span>`);
+      moveTip(evt);
+    });
+    bar.addEventListener('mouseleave', hideTip);
+    svg.appendChild(bar);
+  });
+
+  if(empty>0){
+    const t = svgEl('text',{class:'axis-label', x:LEFT_COL, y:H-6, 'font-size':10.5});
+    t.textContent = `${empty} instrument(s) without bandwidth data not shown.`;
+    svg.appendChild(t);
+  }
+}
+
+/* ---- Chart 2: resolution ---- */
+function renderResChart(items){
+  const svg = document.getElementById('chart-res');
+  svg.innerHTML='';
+  const rows = items.filter(d=>d.res_min!=null).sort((a,b)=>(b.res_max??b.res_min)-(a.res_max??a.res_min));
+  const empty = items.length-rows.length;
+  const W=900, plotW=W-LEFT_COL-RIGHT_PAD;
+  const H = TOP_PAD + rows.length*(ROW_H+ROW_GAP) + BOT_PAD;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width','100%'); svg.setAttribute('height',H);
+
+  const domMax = Math.max(300000, ...rows.map(d=>d.res_max??d.res_min));
+  const x = v => LEFT_COL + v/domMax*plotW;
+  const ticks = niceTicks(0, domMax, 6);
+  ticks.forEach(t=>{
+    svg.appendChild(svgEl('line',{class:'gridline', x1:x(t),x2:x(t), y1:TOP_PAD-10, y2:H-BOT_PAD+4}));
+    const lb = svgEl('text',{class:'axis-label', x:x(t), y:H-BOT_PAD+18, 'font-size':10.5, 'text-anchor':'middle'});
+    lb.textContent = Math.round(t/1000)+'k'; svg.appendChild(lb);
+  });
+
+  rows.forEach((d,i)=>{
+    const y = TOP_PAD + i*(ROW_H+ROW_GAP);
+    const lbl = svgEl('text',{class:'row-label', x:LEFT_COL-8, y:y+ROW_H/2+4, 'text-anchor':'end'});
+    lbl.textContent = d.name; svg.appendChild(lbl);
+    const meta = SECTION_META[d.section];
+    const x0=x(d.res_min), x1=x(d.res_max??d.res_min);
+    const on = state.checked.has(d.id);
+    const bar = svgEl('rect',{x:x0,y:y+4,width:Math.max(3,x1-x0),height:ROW_H-8,rx:3,
+      fill: meta.pattern? 'var(--surface-2)': meta.color, opacity: on?1:0.28,
+      stroke: meta.pattern? meta.color: 'none', 'stroke-dasharray': meta.pattern? '3 2':'none'});
+    bar.addEventListener('mousemove', evt=>{
+      const rtxt = d.res_min===d.res_max? Math.round(d.res_min).toLocaleString(): `${Math.round(d.res_min).toLocaleString()}–${Math.round(d.res_max).toLocaleString()}`;
+      showTip(evt, `<b>${d.name}</b><span class="k">R = ${rtxt}</span>`); moveTip(evt);
+    });
+    bar.addEventListener('mouseleave', hideTip);
+    svg.appendChild(bar);
+  });
+  if(empty>0){
+    const t = svgEl('text',{class:'axis-label', x:LEFT_COL, y:H-6, 'font-size':10.5});
+    t.textContent = `${empty} instrument(s) without resolution data not shown.`;
+    svg.appendChild(t);
+  }
+  renderLegend('legend-1');
+}
+
+/* ---- Chart 3: scatter ---- */
+function renderScatter(items){
+  const svg = document.getElementById('chart-scatter');
+  svg.innerHTML='';
+  const rows = items.filter(d=> d.res_max!=null && d.precision_max_ms!=null && d.precision_max_ms>0);
+  const empty = items.length-rows.length;
+  const W=900, H=460;
+  const padL=54, padR=20, padT=18, padB=40;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width','100%'); svg.setAttribute('height',H);
+
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const xMax = Math.max(300000, ...rows.map(d=>d.res_max));
+  const x = v => padL + v/xMax*plotW;
+  const yMin=0.05, yMax=1000;
+  const y = v => padT + plotH - (Math.log10(Math.max(v,yMin))-Math.log10(yMin))/(Math.log10(yMax)-Math.log10(yMin))*plotH;
+
+  [0.1,1,10,100,1000].forEach(v=>{
+    const yy=y(v);
+    svg.appendChild(svgEl('line',{class:'gridline', x1:padL, x2:W-padR, y1:yy, y2:yy}));
+    const lb = svgEl('text',{class:'axis-label', x:padL-8, y:yy+4, 'font-size':10.5, 'text-anchor':'end'});
+    lb.textContent = (v>=1? v : v)+' m/s'; svg.appendChild(lb);
+  });
+  niceTicks(0,xMax,6).forEach(t=>{
+    const xx=x(t);
+    svg.appendChild(svgEl('line',{class:'gridline', x1:xx,x2:xx, y1:padT, y2:H-padB}));
+    const lb = svgEl('text',{class:'axis-label', x:xx, y:H-padB+16, 'font-size':10.5, 'text-anchor':'middle'});
+    lb.textContent = Math.round(t/1000)+'k'; svg.appendChild(lb);
+  });
+  const xl = svgEl('text',{class:'axis-label', x:padL+plotW/2, y:H-6, 'font-size':10.5, 'text-anchor':'middle'});
+  xl.textContent='Spectral resolution R'; svg.appendChild(xl);
+
+  const telVals = rows.map(d=>d.telescope_size_m).filter(v=>v!=null);
+  const telMax = Math.max(1,...telVals);
+  const rad = v => v==null? 5 : 4 + Math.sqrt(v/telMax)*10;
+
+  rows.forEach(d=>{
+    const meta = SECTION_META[d.section];
+    const cx=x(d.res_max), cy=y(d.precision_max_ms);
+    const on = state.checked.has(d.id);
+    const c = svgEl('circle',{cx,cy, r:rad(d.telescope_size_m), fill: meta.pattern?'var(--surface-2)':meta.color,
+      stroke: meta.pattern? meta.color : 'var(--surface)', 'stroke-width': meta.pattern?1.5:1.5,
+      'stroke-dasharray': meta.pattern?'2 2':'none', opacity: on? 0.88:0.22});
+    c.addEventListener('mousemove', evt=>{
+      showTip(evt, `<b>${d.name}</b><span class="k">R ≈ ${Math.round(d.res_max).toLocaleString()} &middot; ${d.precision_max_ms} m/s</span><br><span class="k">${d.telescope||''}${d.telescope_size_m?(' ('+d.telescope_size_m+'m)'):''}</span>`);
+      moveTip(evt);
+    });
+    c.addEventListener('mouseleave', hideTip);
+    svg.appendChild(c);
+  });
+  if(empty>0){
+    const t = svgEl('text',{class:'axis-label', x:padL, y:padT+10, 'font-size':10.5});
+    t.textContent = `${empty} instrument(s) without both R and precision not shown.`;
+    svg.appendChild(t);
+  }
+  renderLegend('legend-2');
+}
+
+/* ---- Chart 4: efficiency ---- */
+function renderEffChart(items){
+  const svg = document.getElementById('chart-eff');
+  svg.innerHTML='';
+  const rows = items.filter(d=>d.efficiency_min!=null).sort((a,b)=>(b.efficiency_max??b.efficiency_min)-(a.efficiency_max??a.efficiency_min));
+  const empty = items.length-rows.length;
+  const W=900, plotW=W-LEFT_COL-RIGHT_PAD;
+  const H = TOP_PAD + rows.length*(ROW_H+ROW_GAP) + BOT_PAD;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width','100%'); svg.setAttribute('height',H);
+
+  const domMax = 0.25;
+  const x = v => LEFT_COL + Math.min(v,domMax)/domMax*plotW;
+  [0,0.05,0.1,0.15,0.2,0.25].forEach(t=>{
+    svg.appendChild(svgEl('line',{class:'gridline', x1:x(t),x2:x(t), y1:TOP_PAD-10, y2:H-BOT_PAD+4}));
+    const lb = svgEl('text',{class:'axis-label', x:x(t), y:H-BOT_PAD+18, 'font-size':10.5, 'text-anchor':'middle'});
+    lb.textContent = Math.round(t*100)+'%'; svg.appendChild(lb);
+  });
+
+  rows.forEach((d,i)=>{
+    const y = TOP_PAD + i*(ROW_H+ROW_GAP);
+    const lbl = svgEl('text',{class:'row-label', x:LEFT_COL-8, y:y+ROW_H/2+4, 'text-anchor':'end'});
+    lbl.textContent = d.name + (d.efficiency_note? ' ●':''); svg.appendChild(lbl);
+    const x0=x(d.efficiency_min), x1=x(d.efficiency_max??d.efficiency_min);
+    const on = state.checked.has(d.id);
+    const bar = svgEl('rect',{x:x0,y:y+4,width:Math.max(3,x1-x0),height:ROW_H-8,rx:3, fill:'var(--cat-visible)', opacity:on?0.85:0.25});
+    bar.addEventListener('mousemove', evt=>{
+      const etxt = d.efficiency_min===d.efficiency_max? Math.round(d.efficiency_min*100)+'%': `${Math.round(d.efficiency_min*100)}–${Math.round(d.efficiency_max*100)}%`;
+      showTip(evt, `<b>${d.name}</b><span class="k">${etxt}${d.efficiency_note?' &middot; spectrograph only':''}</span>`); moveTip(evt);
+    });
+    bar.addEventListener('mouseleave', hideTip);
+    svg.appendChild(bar);
+  });
+  if(empty>0){
+    const t = svgEl('text',{class:'axis-label', x:LEFT_COL, y:H-6, 'font-size':10.5});
+    t.textContent = `${empty} instrument(s) without throughput data not shown.`;
+    svg.appendChild(t);
+  }
+}
+
+function renderLegend(id){
+  const el = document.getElementById(id);
+  el.innerHTML = SECTION_ORDER.map(sec=>{
+    const m = SECTION_META[sec];
+    const dot = m.pattern? `<span class="dot future"></span>` : `<span class="dot" style="background:${m.color}"></span>`;
+    return `<span>${dot}${m.label}</span>`;
+  }).join('');
+}
+
+function renderCharts(){
+  const cand = candidates();
+  renderWaveChart(cand);
+  renderResChart(cand);
+  renderScatter(cand);
+  renderEffChart(cand);
+}
+
+/* ---------------- table ---------------- */
+const COLS = [
+  {k:'name', label:'Instrument'},
+  {k:'section', label:'Category'},
+  {k:'observatory', label:'Observatory'},
+  {k:'telescope_size_m', label:'Aperture (m)', num:true},
+  {k:'bw_min_nm', label:'λ min (nm)', num:true},
+  {k:'bw_max_nm', label:'λ max (nm)', num:true},
+  {k:'res_max', label:'R (max)', num:true},
+  {k:'precision_max_ms', label:'RV precision (m/s)', num:true},
+  {k:'efficiency_max', label:'Efficiency', num:true, pct:true},
+  {k:'method', label:'Feed'},
+  {k:'wavelength_calibration', label:'Calibration'},
+  {k:'year_started', label:'Since', num:true},
+];
+
+function renderTableHead(){
+  const tr = document.getElementById('thead-row');
+  tr.innerHTML='';
+  COLS.forEach(c=>{
+    const th = document.createElement('th');
+    th.textContent = c.label + (state.sort.key===c.k? (state.sort.dir>0?' ↑':' ↓'):'');
+    if(state.sort.key===c.k) th.classList.add('active');
+    th.addEventListener('click', ()=>{
+      if(state.sort.key===c.k) state.sort.dir*=-1; else { state.sort.key=c.k; state.sort.dir=1; }
+      renderTable();
+    });
+    tr.appendChild(th);
+  });
+}
+
+function renderTable(){
+  renderTableHead();
+  const tbody = document.getElementById('tbody');
+  const rows = selected().slice().sort((a,b)=>{
+    const k = state.sort.key;
+    let av=a[k], bv=b[k];
+    if(av==null && bv==null) return 0;
+    if(av==null) return 1; if(bv==null) return -1;
+    if(typeof av==='string') return av.localeCompare(bv)*state.sort.dir;
+    return (av-bv)*state.sort.dir;
+  });
+  tbody.innerHTML='';
+  rows.forEach(d=>{
+    const tr = document.createElement('tr');
+    const meta = SECTION_META[d.section];
+    tr.innerHTML = COLS.map(c=>{
+      let v = d[c.k];
+      if(c.k==='section') v = `<span class="sec-dot" style="background:${meta.pattern?'transparent':meta.color};${meta.pattern?`border:1px solid ${meta.color}`:''}"></span>${meta.label}`;
+      else if(c.pct) v = (v!=null? Math.round(v*100)+'%':'–');
+      else if(c.num) v = (v!=null? (v>=1000? Math.round(v).toLocaleString(): v):'–');
+      else if(c.k==='name') v = d.name;
+      else v = (v!=null && v!=='')? v : '–';
+      const cls = (c.k==='name'?'nm':'') + (c.num?' num':'');
+      return `<td class="${cls}">${v}</td>`;
+    }).join('');
+    tbody.appendChild(tr);
+  });
+}
+
+/* ---------------- stats ---------------- */
+function renderStats(){
+  document.getElementById('stat-total').textContent = DATA.length;
+  document.getElementById('stat-shown').textContent = selected().length;
+  const obs = new Set(DATA.map(d=>d.observatory).filter(Boolean));
+  document.getElementById('stat-obs').textContent = obs.size;
+}
+
+function renderAll(){
+  renderChecklist();
+  renderCharts();
+  renderTable();
+  renderStats();
+}
+renderAll();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderCharts);
+</script>
