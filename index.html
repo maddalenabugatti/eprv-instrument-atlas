@@ -291,7 +291,7 @@ tbody td.num{ font-variant-numeric:tabular-nums; text-align:right; }
 
     <section class="card">
       <div class="card-head">
-        <div><h3>Spectral resolution</h3><div class="sub">Resolving power R = &lambda;/&Delta;&lambda;, by instrument category.</div></div>
+        <div><h3>Spectral resolution</h3><div class="sub">Resolving power R = &lambda;/&Delta;&lambda;. Each dot is a distinct operating mode &mdash; not a continuous range.</div></div>
         <div class="legend" id="legend-1"></div>
       </div>
       <div class="chart-scroll"><svg id="chart-res" class="chart"></svg></div>
@@ -632,17 +632,23 @@ function renderResChart(items){
     const lbl = svgEl('text',{class:'row-label', x:LEFT_COL-8, y:y+ROW_H/2+4, 'text-anchor':'end'});
     lbl.textContent = d.name; svg.appendChild(lbl);
     const meta = SECTION_META[d.section];
-    const x0=x(d.res_min), x1=x(d.res_max??d.res_min);
     const on = state.checked.has(d.id);
-    const bar = svgEl('rect',{x:x0,y:y+4,width:Math.max(3,x1-x0),height:ROW_H-8,rx:3,
-      fill: meta.pattern? 'var(--surface-2)': meta.color, opacity: on?1:0.28,
-      stroke: meta.pattern? meta.color: 'none', 'stroke-dasharray': meta.pattern? '3 2':'none'});
-    bar.addEventListener('mousemove', evt=>{
-      const rtxt = d.res_min===d.res_max? Math.round(d.res_min).toLocaleString(): `${Math.round(d.res_min).toLocaleString()}–${Math.round(d.res_max).toLocaleString()}`;
-      showTip(evt, `<b>${d.name}</b><span class="k">R = ${rtxt}</span>`); moveTip(evt);
+    const cy = y + ROW_H/2;
+    const values = d.res_min===d.res_max ? [d.res_min] : [d.res_min, d.res_max];
+    svg.appendChild(svgEl('line',{x1:LEFT_COL, x2:W-RIGHT_PAD, y1:cy, y2:cy, class:'gridline', opacity:0.5}));
+    values.forEach(v=>{
+      const cx = x(v);
+      const dot = svgEl('circle',{cx, cy, r:5,
+        fill: meta.pattern? 'var(--surface)': meta.color,
+        stroke: meta.color, 'stroke-width': meta.pattern?1.5:1,
+        'stroke-dasharray': meta.pattern?'2 1.5':'none',
+        opacity: on?1:0.3});
+      dot.addEventListener('mousemove', evt=>{
+        showTip(evt, `<b>${d.name}</b><span class="k">R = ${Math.round(v).toLocaleString()}</span>`); moveTip(evt);
+      });
+      dot.addEventListener('mouseleave', hideTip);
+      svg.appendChild(dot);
     });
-    bar.addEventListener('mouseleave', hideTip);
-    svg.appendChild(bar);
   });
   if(empty>0){
     const t = svgEl('text',{class:'axis-label', x:LEFT_COL, y:H-6, 'font-size':10.5});
