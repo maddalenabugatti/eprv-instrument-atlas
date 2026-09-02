@@ -1081,19 +1081,19 @@ const COLS = [
   {k:'section', label:'Category'},
   {k:'observatory', label:'Observatory'},
   {k:'seeing_arcsec', label:'Seeing (″)', num:true, seeingLink:true},
-  {k:'telescope_size_m', label:'Aperture (m)', num:true},
-  {k:'effective_area_m2', label:'Eff. area (m²)', num:true},
-  {k:'bw_min_nm', label:'λ min (nm)', num:true},
-  {k:'bw_max_nm', label:'λ max (nm)', num:true},
-  {k:'res_max', label:'R (max)', num:true},
-  {k:'precision_max_ms', label:'RV precision (m/s)', num:true},
-  {k:'efficiency_max', label:'Efficiency', num:true, pct:true},
-  {k:'pointing_accuracy_arcsec', label:'Pointing acc. (″)', num:true},
-  {k:'guiding_accuracy_arcsec', label:'Guiding acc. (″)', num:true},
-  {k:'guiding_fov', label:'Guiding FoV'},
-  {k:'method', label:'Feed'},
-  {k:'wavelength_calibration', label:'Calibration'},
-  {k:'year_started', label:'First light', num:true, year:true},
+  {k:'telescope_size_m', label:'Aperture (m)', num:true, sourced:true},
+  {k:'effective_area_m2', label:'Eff. area (m²)', num:true, sourced:true},
+  {k:'bw_min_nm', label:'λ min (nm)', num:true, sourced:true},
+  {k:'bw_max_nm', label:'λ max (nm)', num:true, sourced:true},
+  {k:'res_max', label:'R (max)', num:true, sourced:true},
+  {k:'precision_max_ms', label:'RV precision (m/s)', num:true, sourced:true},
+  {k:'efficiency_max', label:'Efficiency', num:true, pct:true, sourced:true},
+  {k:'pointing_accuracy_arcsec', label:'Pointing acc. (″)', num:true, sourced:true},
+  {k:'guiding_accuracy_arcsec', label:'Guiding acc. (″)', num:true, sourced:true},
+  {k:'guiding_fov', label:'Guiding FoV', sourced:true},
+  {k:'method', label:'Feed', sourced:true},
+  {k:'wavelength_calibration', label:'Calibration', sourced:true},
+  {k:'year_started', label:'First light', num:true, year:true, sourced:true},
   {k:'contact', label:'Contact', email:true},
   {k:'paper', label:'Reference', link:true},
 ];
@@ -1137,8 +1137,11 @@ function renderTable(){
       else if(c.link) v = (v? `<a href="${v}" target="_blank" rel="noopener noreferrer">↗ source</a>` : '–');
       else if(c.seeingLink) v = (v!=null? `${v}″${d.seeing_source? ` <a href="${d.seeing_source}" target="_blank" rel="noopener noreferrer" title="Source">↗</a>`:''}` : '–');
       else if(c.num) v = (v!=null? (v>=1000? Math.round(v).toLocaleString(): v):'–');
-      else if(c.k==='name') v = d.name;
+      else if(c.k==='name') v = d.site? `<a href="${d.site}" target="_blank" rel="noopener noreferrer" title="Instrument page">${d.name}</a>` : d.name;
       else v = (v!=null && v!=='')? v : '–';
+      if(c.sourced && d.paper && v!=='–'){
+        v = `<a href="${d.paper}" target="_blank" rel="noopener noreferrer" title="Source: click to view">${v}</a>`;
+      }
       const cls = (c.k==='name'?'nm':'') + (c.num?' num':'');
       return `<td class="${cls}">${v}</td>`;
     }).join('');
