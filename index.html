@@ -346,10 +346,11 @@ tbody td.num{ font-variant-numeric:tabular-nums; text-align:right; }
 
     <section class="card">
       <div class="card-head">
-        <div><h3>Spectral sampling</h3><div class="sub">Detector sampling per resolution element: FWHM in pixels along dispersion (x) vs. across dispersion (y). Populated as instrument teams reply.</div></div>
+        <div><h3>Spectral sampling</h3><div class="sub">Detector sampling per resolution element, shown as a Gaussian FWHM footprint: width = dispersion-direction sampling (px), height = cross-dispersion sampling (px). Populated as instrument teams reply.</div></div>
         <div class="legend" id="legend-3"></div>
       </div>
-      <div class="chart-scroll"><svg id="chart-sampling" class="chart"></svg></div>
+      <div class="fiber-grid" id="sampling-grid"></div>
+      <div class="foot-note" id="sampling-empty-note" hidden>No sampling data yet &mdash; this fills in as instrument teams reply to the pixel-sampling question.</div>
     </section>
 
     <section class="card">
@@ -1002,54 +1003,53 @@ function renderFiberGrid(items){
 
 /* ---- Chart: spectral sampling ---- */
 function renderSampling(items){
-  const svg = document.getElementById('chart-sampling');
-  svg.innerHTML='';
-  const rows = items.filter(d=>d.sampling_disp_px!=null && d.sampling_crossdisp_px!=null);
+  const wrap = document.getElementById('sampling-grid');
+  const emptyNote = document.getElementById('sampling-empty-note');
+  wrap.innerHTML = '';
+  const rows = items.filter(d=>d.sampling_disp_px!=null && d.sampling_crossdisp_px!=null)
+    .sort((a,b)=> (a.sampling_disp_px*a.sampling_crossdisp_px) - (b.sampling_disp_px*b.sampling_crossdisp_px));
 
-  if(rows.length===0){
-    const W=900, H=200;
-    svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width','100%'); svg.setAttribute('height',H);
-    svg.appendChild(svgEl('rect',{x:1,y:1,width:W-2,height:H-2,fill:'none',stroke:'var(--border-strong)','stroke-dasharray':'4 3',rx:10}));
-    const t1 = svgEl('text',{x:W/2,y:H/2-6,'text-anchor':'middle','font-size':13,fill:'var(--ink-2)'});
-    t1.textContent = 'No sampling data yet.';
-    const t2 = svgEl('text',{x:W/2,y:H/2+14,'text-anchor':'middle','font-size':11.5,fill:'var(--ink-3)'});
-    t2.textContent = 'This fills in as instrument teams reply to the pixel-sampling question.';
-    svg.appendChild(t1); svg.appendChild(t2);
-    renderLegend('legend-3');
-    return;
-  }
+  emptyNote.hidden = rows.length>0;
+  if(rows.length===0){ renderLegend('legend-3'); return; }
 
-  const W=900, H=460, padL=54, padR=20, padT=18, padB=40;
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.setAttribute('width','100%'); svg.setAttribute('height',H);
-  const plotW=W-padL-padR, plotH=H-padT-padB;
-  const maxVal = Math.max(6, ...rows.map(d=>d.sampling_disp_px), ...rows.map(d=>d.sampling_crossdisp_px));
-  const x = v => padL + v/maxVal*plotW;
-  const y = v => padT + plotH - v/maxVal*plotH;
-
-  niceTicks(0,maxVal,6).forEach(t=>{
-    const xx=x(t), yy=y(t);
-    svg.appendChild(svgEl('line',{class:'gridline', x1:xx,x2:xx, y1:padT, y2:H-padB}));
-    svg.appendChild(svgEl('line',{class:'gridline', x1:padL,x2:W-padR, y1:yy, y2:yy}));
-    const lbx = svgEl('text',{class:'axis-label', x:xx, y:H-padB+16, 'font-size':10.5, 'text-anchor':'middle'});
-    lbx.textContent = t+'px'; svg.appendChild(lbx);
-    const lby = svgEl('text',{class:'axis-label', x:padL-8, y:yy+4, 'font-size':10.5, 'text-anchor':'end'});
-    lby.textContent = t+'px'; svg.appendChild(lby);
-  });
-  const xl = svgEl('text',{class:'axis-label', x:padL+plotW/2, y:H-6, 'font-size':10.5, 'text-anchor':'middle'});
-  xl.textContent='Dispersion-direction FWHM (px/resolution element)'; svg.appendChild(xl);
+  const MAXPX = Math.max(6, ...rows.map(d=>d.sampling_disp_px), ...rows.map(d=>d.sampling_crossdisp_px));
+  const CELL = 84, PAD = 14;
+  const scale = (CELL-2*PAD)/MAXPX;
 
   rows.forEach(d=>{
     const meta = SECTION_META[d.section];
-    const cx=x(d.sampling_disp_px), cy=y(d.sampling_crossdisp_px);
     const on = state.checked.has(d.id);
-    const c = svgEl('circle',{cx,cy, r:6, fill: meta.pattern?'var(--surface-2)':meta.color,
-      stroke: meta.pattern? meta.color:'var(--surface)', 'stroke-width':1.5,
-      'stroke-dasharray': meta.pattern?'2 1.5':'none', opacity: on?0.9:0.25});
-    c.addEventListener('mousemove', evt=>{
-      showTip(evt, `<b>${d.name}</b><span class="k">${d.sampling_disp_px} px &times; ${d.sampling_crossdisp_px} px</span>`); moveTip(evt);
+    const cell = document.createElement('div');
+    cell.className = 'fiber-cell';
+    cell.style.opacity = on? 1: 0.35;
+
+    const gid = 'gauss-'+d.id.replace(/[^a-zA-Z0-9]/g,'');
+    const svg = svgEl('svg',{viewBox:`0 0 ${CELL} ${CELL}`, width:CELL, height:CELL});
+    const defs = svgEl('defs',{});
+    const grad = svgEl('radialGradient',{id:gid});
+    grad.appendChild(svgEl('stop',{offset:'0%','stop-color':meta.pattern?'var(--surface)':meta.color,'stop-opacity':meta.pattern?0:0.85}));
+    grad.appendChild(svgEl('stop',{offset:'55%','stop-color':meta.color,'stop-opacity':0.5}));
+    grad.appendChild(svgEl('stop',{offset:'100%','stop-color':meta.color,'stop-opacity':0}));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+
+    const cx=CELL/2, cy=CELL/2;
+    const rx = Math.max(3, d.sampling_disp_px/2*scale);
+    const ry = Math.max(3, d.sampling_crossdisp_px/2*scale);
+    svg.appendChild(svgEl('ellipse',{cx,cy,rx,ry, fill:`url(#${gid})`}));
+    svg.appendChild(svgEl('ellipse',{cx,cy,rx,ry, fill:'none', stroke:meta.color, 'stroke-width':1.2,
+      'stroke-dasharray': meta.pattern?'2 1.5':'none', opacity:0.8}));
+    cell.appendChild(svg);
+
+    const nameEl = document.createElement('div'); nameEl.className='nm'; nameEl.textContent=d.name;
+    const valEl = document.createElement('div'); valEl.className='val';
+    valEl.textContent = `${d.sampling_disp_px} × ${d.sampling_crossdisp_px} px`;
+    cell.appendChild(nameEl); cell.appendChild(valEl);
+    cell.addEventListener('mousemove', evt=>{
+      showTip(evt, `<b>${d.name}</b><span class="k">dispersion ${d.sampling_disp_px} px &middot; cross-disp ${d.sampling_crossdisp_px} px</span>`); moveTip(evt);
     });
-    c.addEventListener('mouseleave', hideTip);
-    svg.appendChild(c);
+    cell.addEventListener('mouseleave', hideTip);
+    wrap.appendChild(cell);
   });
   renderLegend('legend-3');
 }
