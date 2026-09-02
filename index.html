@@ -1080,6 +1080,7 @@ const COLS = [
   {k:'name', label:'Instrument'},
   {k:'section', label:'Category'},
   {k:'observatory', label:'Observatory'},
+  {k:'seeing_arcsec', label:'Seeing (″)', num:true, seeingLink:true},
   {k:'telescope_size_m', label:'Aperture (m)', num:true},
   {k:'effective_area_m2', label:'Eff. area (m²)', num:true},
   {k:'bw_min_nm', label:'λ min (nm)', num:true},
@@ -1134,6 +1135,7 @@ function renderTable(){
       else if(c.year) v = (v!=null? Math.round(v):'–');
       else if(c.email) v = (v? `<a href="mailto:${v}">${v}</a>` : '–');
       else if(c.link) v = (v? `<a href="${v}" target="_blank" rel="noopener noreferrer">↗ source</a>` : '–');
+      else if(c.seeingLink) v = (v!=null? `${v}″${d.seeing_source? ` <a href="${d.seeing_source}" target="_blank" rel="noopener noreferrer" title="Source">↗</a>`:''}` : '–');
       else if(c.num) v = (v!=null? (v>=1000? Math.round(v).toLocaleString(): v):'–');
       else if(c.k==='name') v = d.name;
       else v = (v!=null && v!=='')? v : '–';
