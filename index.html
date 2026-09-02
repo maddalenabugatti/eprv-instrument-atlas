@@ -691,9 +691,10 @@ function renderWaveChart(items){
     const x0 = x(Math.max(domMin,d.bw_min_nm)), x1 = x(Math.min(domMax,d.bw_max_nm));
     const gid = 'grad-'+d.id.replace(/[^a-zA-Z0-9]/g,'');
     const grad = svgEl('linearGradient',{id:gid, x1:'0%',x2:'100%',y1:'0%',y2:'0%'});
-    const steps=10;
+    const span = d.bw_max_nm-d.bw_min_nm;
+    const steps = Math.max(10, Math.ceil(span/20));
     for(let s=0;s<=steps;s++){
-      const nm = d.bw_min_nm + (d.bw_max_nm-d.bw_min_nm)*(s/steps);
+      const nm = d.bw_min_nm + span*(s/steps);
       grad.appendChild(svgEl('stop',{offset:(s/steps*100)+'%', 'stop-color':rgbStr(wavelengthToRGB(nm))}));
     }
     svg.appendChild(grad);
